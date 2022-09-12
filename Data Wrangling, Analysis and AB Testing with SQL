@@ -1,0 +1,41 @@
+--Goal: pull email addresses, but only for non-deleted users
+SELECT id AS user_id, email_address
+FROM dsv1069.users
+WHERE deleted_at IS NOT NULL;
+
+--Goal: Use the items table to count the number of items for sale in each category
+SELECT category, count(id)
+FROM dsv1069.items
+GROUP BY category
+ORDER BY count DESC;
+
+--Goal: Select all of the columns from the result when you JOIN the users table to the orders table
+SELECT * 
+FROM dsv1069.users INNER JOIN dsv1069.orders
+     ON dsv1069.users.id = dsv1069.orders.user_id;
+     
+--Goal: count the number of viewed_item events
+FROM dsv1069.events
+WHERE event_name = 'view_item';
+
+--Goal: Compute the number of items in the items table which have been ordered
+SELECT COUNT(DISTINCT item_id) AS item_count
+FROM dsv1069.orders;
+
+--Goal: For each user figure out IF a user has ordered something, and when their first purchase was
+SELECT users.id AS user_id, MIN(orders.paid_at) AS min_paid_at
+FROM dsv1069.orders RIGHT JOIN dsv1069.users
+    ON orders.user_id = users.id
+GROUP BY users.id;
+
+--Goal: what percent of users have ever viewed the user profile page
+SELECT (CASE WHEN first_view IS NULL THEN false
+     ELSE TRUE END) AS has_viewed_profile_page, 
+     COUNT(user_id) AS users
+FROM (SELECT users.id AS user_id, MIN(event_time) AS first_view
+      FROM dsv1069.users LEFT JOIN dsv1069.events
+         ON events.user_id = users.id
+      AND event_name = 'view_user_profile'
+      GROUP BY users.id) first_profile_views
+GROUP BY (CASE WHEN first_view IS NULL THEN false 
+     ELSE TRUE END);
