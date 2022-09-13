@@ -29,9 +29,10 @@ FROM dsv1069.orders RIGHT JOIN dsv1069.users
 GROUP BY users.id;
 
 --Goal: what percent of users have ever viewed the user profile page
-SELECT (CASE WHEN first_view IS NULL THEN false
-     ELSE TRUE END) AS has_viewed_profile_page, 
-     COUNT(user_id) AS users
+SELECT (CASE WHEN first_view IS NULL 
+             THEN false
+             ELSE TRUE END) AS has_viewed_profile_page, 
+        COUNT(user_id) AS users
 FROM (SELECT users.id AS user_id, MIN(event_time) AS first_view
       FROM dsv1069.users LEFT JOIN dsv1069.events
          ON events.user_id = users.id
@@ -39,3 +40,41 @@ FROM (SELECT users.id AS user_id, MIN(event_time) AS first_view
       GROUP BY users.id) first_profile_views
 GROUP BY (CASE WHEN first_view IS NULL THEN false 
      ELSE TRUE END);
+
+--Goal: Write a query to format the view_item event into a table with the appropriate columns
+--Secret Goal: figure out how to do it for multiple parameters 
+SELECT event_id, event_time, user_id, platform,
+     (CASE WHEN parameter_name = 'item_id'
+           THEN CAST(parameter_value AS INT)
+           ELSE NULL
+           END) AS item_id
+FROM dsv1069.events
+WHERE event_name = 'view_item';
+
+--Goal: Write a query to format the view_item event into a table with the appropriate columns (This replicates what we had in the slides, but it is missing a column)
+SELECT event_id, event_time, user_id, platform,
+     (CASE WHEN parameter_name = 'item_id'
+           THEN CAST(parameter_value AS INT)
+           ELSE NULL
+           END) AS item_id,
+     (CASE WHEN parameter_name = 'referrer'
+           THEN parameter_value
+           ELSE NULL
+           END) AS referrer
+FROM dsv1069.events
+WHERE event_name = 'view_item'
+ORDER BY event_id;
+           
+--Goal: Aggregate the columns 
+SELECT event_id, event_time, user_id, platform,
+     MAX(CASE WHEN parameter_name = 'item_id'
+           THEN CAST(parameter_value AS INT)
+           ELSE NULL
+           END) AS item_id,
+     MAX(CASE WHEN parameter_name = 'referrer'
+           THEN parameter_value
+           ELSE NULL
+           END) AS referrer
+FROM dsv1069.events
+WHERE event_name = 'view_item'
+GROUP BY event_id, event_time, user_id, platform;
